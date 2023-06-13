@@ -74,7 +74,6 @@ resource "azurerm_kubernetes_cluster" "aks_cluster" {
       os_sku = "Mariner"
       node_labels = {
         "nodepool-type" = "system"
-        "nodepool-kubernetes-version" = var.cluster_kubernetes_version
       }
     }
 

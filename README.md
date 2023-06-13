@@ -72,3 +72,59 @@ The new User nodepool will be labelled `nodepool-state: target`
 ### delete
 
 `delete` will delete the User nodepool labelled `nodepool-state: live`. Once that's done, the User nodepool labelled `nodepool-state: target` will be relabelled 'nodepool-state: live`
+
+## Walkthrough
+
+### Dependencies
+
+To use this repo, you'll need
+
+- Azure CLI (`az`)
+- Kubernetes CLI (`kubectl`)
+- Terraform
+- jq
+
+### Initial deployment
+
+This script stores Terraform state in Azure Storage. Create an Azure storage account and add the details to the `backend.hcl` file
+
+```
+resource_group_name  = "<name of resource group where storage account resides>"
+storage_account_name = "<name of storage account>"
+container_name       = "<name of a blob container>"
+key                  = "<just some value>"
+```
+
+You will need to use the `az` Azure CLI to sign in to the Azure subscription where you want to deploy the AKS cluster.
+
+The `variables.tf` file contains the variables used for the initial deployment. To experiment with upgrading clusters, ensure that the three variables that reference the Kubernetes version are all set to the same value and are all set to an older version of Kubernetes that you can upgrade. You can use the `az aks get-versions` command to see which versions of Kubernetes are available for installation.
+
+Run the `tfinit.sh` script to initialise Terraform.
+
+Then, run `terraform apply` to create the initial AKS deployment.
+
+Once the cluster has been created, you can experiment with upgrading.
+
+### Create a nodepool with a new version of Kubernetes.
+
+In the `upgrade-manager.json` file, set the appropriate cluster name and resource group name and adjust the `targetVersion` to something newer than the version you initially installed. Ensure that the `action` is set to `create`
+
+Run the `upgrade-manager.sh` script. The script should confirm the current versions of Kubernetes in use on your cluster and the version you are upgrading to.
+
+You should first see that the script upgrades the AKS control plane to the target Kubernetes version. Nodepools cannot run a version of Kubernetes that's higher than the control plane version, so we upgrade that first.
+
+After the control plane has updated, you should see a new nodepool gets deployed. Using a tool like `k9s` is great for this, as it refreshes regularly and you can see the new nodes being built and coming online.
+
+### Migrate the workloads from the old nodepool to the new nodepool
+
+Update the `upgrade-manager.json` file and set the `action` to `migrate`. Then run the `upgrade-manager.sh` script again. You should see each of the nodes in the old nodepool gets tainted, cordoned and then drained. If you're monitoring with a tool such as `k9s` you will see the node status changes to `SchedulingDisabled` and you should see your workloads move from the old nodepool to the new nodepool.
+
+### Delete the old nodepool
+
+Update the `upgrade-manager.json` file by setting the `action` to `delete`. Then run the `upgrade-manager.sh` script again. You should now see that the old nodepool gets deleted. You will also see that the `nodepool-state` label applied to the nodes in the new nodepool get updated from `target` to `live`.
+
+### Upgrade the system nodepool.
+
+Update the `upgrade-manager.json' file and set the `action` to `system-upgrade`. Run the `upgrade-manager.sh` script and it should perform an update of the system nodepool. Again, using a tool like `k9s` will show the AKS upgrade process in progress as it cycles through each of the nodes in the system nodepool.
+
+

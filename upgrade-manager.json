@@ -1,6 +1,6 @@
 {
     "clusterName": "aks-b9b4",
     "resourceGroup": "aks-b9b4",
-    "targetVersion": "1.24.10",
+    "targetVersion": "1.25.6",
     "action": "system-upgrade"
 }
