@@ -4,6 +4,8 @@
 
 This repo provides an example of how you can upgrade an Azure Kubernetes Service (AKS) cluster using a blue / green nodepool upgrade methodology with Terraform.
 
+**NOTE** This repo is intended to provide one possible way to implement the described scenario. As such, it serves as inspiration for something you might want to implement yourself and should not be considered production grade!
+
 ## What is a blue / green nodepool upgrade
 
 AKS features built in mechanisms to automatically upgrade your cluster to a newer Kubernetes version when one is available. Using this fully automated process, AKS will add new nodes to your cluster, move workloads and remove the old nodes.
