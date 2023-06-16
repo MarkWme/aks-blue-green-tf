@@ -43,7 +43,7 @@ The actions are issued to the script via a JSON configuration file. The idea of 
 
 The file `upgrade-manager.json` is configured with the name and resource group of the AKS cluster you want to upgrade, the target Kubernetes version you want to upgrade to and the action you want the script to perform.
 
-```
+```json
 {
     "clusterName": "aks-cluster-name",
     "resourceGroup": "aks-cluster-resource-group",
@@ -51,11 +51,12 @@ The file `upgrade-manager.json` is configured with the name and resource group o
     "action": "action type"
 }
 ```
+
 The `upgrade-manager.sh` script recognises the following actions
 
 ### system-upgrade
 
-`system-upgrade` will upgrade the [System nodepool](https://learn.microsoft.com/en-us/azure/aks/use-system-pools?tabs=azure-cli) to the target Kubernetes version. The upgrade is performed using the standard AKS upgrade mechanism (i.e. running `az aks nodepool upgrade ...`).
+`system-upgrade` will upgrade the [System nodepool](https://learn.microsoft.com/azure/aks/use-system-pools?tabs=azure-cli) to the target Kubernetes version. The upgrade is performed using the standard AKS upgrade mechanism (i.e. running `az aks nodepool upgrade ...`).
 
 When upgrading the System nodepool, the AKS control plane cannot be running an older version of Kubernetes than the version you want to upgrade the nodepools to. Therefore, before the System nodepool is updated, the version of the AKS control plane is checked, and if it's older than the target version, it will be upgraded first.
 
@@ -88,7 +89,7 @@ To use this repo, you'll need
 
 This script stores Terraform state in Azure Storage. Create an Azure storage account and add the details to the `backend.hcl` file
 
-```
+```hcl
 resource_group_name  = "<name of resource group where storage account resides>"
 storage_account_name = "<name of storage account>"
 container_name       = "<name of a blob container>"
@@ -105,7 +106,7 @@ Then, run `terraform apply` to create the initial AKS deployment.
 
 Once the cluster has been created, you can experiment with upgrading.
 
-### Create a nodepool with a new version of Kubernetes.
+### Create a nodepool with a new version of Kubernetes
 
 In the `upgrade-manager.json` file, set the appropriate cluster name and resource group name and adjust the `targetVersion` to something newer than the version you initially installed. Ensure that the `action` is set to `create`
 
@@ -123,8 +124,6 @@ Update the `upgrade-manager.json` file and set the `action` to `migrate`. Then r
 
 Update the `upgrade-manager.json` file by setting the `action` to `delete`. Then run the `upgrade-manager.sh` script again. You should now see that the old nodepool gets deleted. You will also see that the `nodepool-state` label applied to the nodes in the new nodepool get updated from `target` to `live`.
 
-### Upgrade the system nodepool.
+### Upgrade the system nodepool
 
-Update the `upgrade-manager.json' file and set the `action` to `system-upgrade`. Run the `upgrade-manager.sh` script and it should perform an update of the system nodepool. Again, using a tool like `k9s` will show the AKS upgrade process in progress as it cycles through each of the nodes in the system nodepool.
-
-
+Update the `upgrade-manager.json` file and set the `action` to `system-upgrade`. Run the `upgrade-manager.sh` script and it should perform an update of the system nodepool. Again, using a tool like `k9s` will show the AKS upgrade process in progress as it cycles through each of the nodes in the system nodepool.
